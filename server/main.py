@@ -15,7 +15,7 @@ from server.db import connect, init_db, row_to_dict, utc_now
 
 load_dotenv()
 
-AUTHOR = os.getenv("REPORT_AUTHOR", "Jonathan")
+AUTHOR = (os.getenv("REPORT_AUTHOR") or "").strip() or "tu nombre"
 TEMPLATE = os.getenv("TEMPLATE_NAME", "yyyy-mm-dd nombre.xlsx")
 
 
@@ -254,6 +254,7 @@ async def preview_report(payload: PreviewIn):
                 end=payload.end_time,
                 notes=notes,
                 done_tasks=done_tasks,
+                author=AUTHOR,
             )
             source = "ai"
         except Exception as exc:
