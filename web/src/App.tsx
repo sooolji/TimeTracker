@@ -14,10 +14,19 @@ const STATUS_LABEL: Record<TaskStatus, string> = {
   done: "Hecha",
 };
 
+type Theme = "light" | "dark";
+
+function initialTheme(): Theme {
+  const stored = localStorage.getItem("theme");
+  if (stored === "light" || stored === "dark") return stored;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
 export default function App() {
   const [date, setDate] = useState(todayIso);
   const [start, setStart] = useState("13:00");
   const [end, setEnd] = useState("20:00");
+  const [theme, setTheme] = useState<Theme>(initialTheme);
   const [config, setConfig] = useState<Config | null>(null);
   const [day, setDay] = useState<DayPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +59,11 @@ export default function App() {
   }, [date]);
 
   useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  useEffect(() => {
     api.config().then((cfg) => {
       setConfig(cfg);
       setStart(cfg.default_start);
@@ -61,10 +75,13 @@ export default function App() {
     void load(date);
   }, [date, load]);
 
-  const doneCount = useMemo(
-    () => day?.tasks.filter((t) => t.status === "done" && t.day === date).length ?? 0,
+  const dayTasks = useMemo(
+    () => day?.tasks.filter((t) => t.day === date) ?? [],
     [day, date],
   );
+  const doneCount = dayTasks.filter((t) => t.status === "done").length;
+  const totalCount = dayTasks.length;
+  const progress = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
 
   async function addNote(e: FormEvent) {
     e.preventDefault();
@@ -93,7 +110,7 @@ export default function App() {
 
   async function generate() {
     setBusy(true);
-    setBusyLabel("Consultando DeepSeek V4 Pro…");
+    setBusyLabel("Consultando la IA…");
     setError(null);
     setSavedName(null);
     try {
@@ -163,13 +180,31 @@ export default function App() {
         <div className="brand">
           <h1>TimeTracker</h1>
           <p>
-            Notas y tareas del día → Excel de {config?.author ?? "Jonathan"}
+            Notas y tareas del día → Excel de {config?.author ?? "tu nombre"}
             {config?.ai_available
               ? ` · IA ${config.ai_provider}`
               : " · sin IA (reparto automático)"}
           </p>
         </div>
         <div className="controls">
+          <button
+            className="btn ghost icon"
+            type="button"
+            title={theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+            aria-label={theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? (
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
+              </svg>
+            )}
+          </button>
           <label className="field">
             <span>Fecha</span>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -190,7 +225,7 @@ export default function App() {
 
       {error ? <p className="banner error">{error}</p> : null}
       {savedName ? (
-        <p className="banner">Informe guardado: {savedName}</p>
+        <p className="banner success">Informe guardado: {savedName}</p>
       ) : null}
       {day?.xlsx_exists ? (
         <p className="banner">Ya hay un Excel para este día: {day.xlsx_name}</p>
@@ -229,7 +264,13 @@ export default function App() {
                 </article>
               ))
             ) : (
-              <p className="empty">Sin notas para este día.</p>
+              <p className="empty">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                  <path d="M14 2v6h6M9 13h6M9 17h6" />
+                </svg>
+                Sin notas para este día.
+              </p>
             )}
           </div>
         </section>
@@ -237,8 +278,11 @@ export default function App() {
         <section className="panel">
           <h2>Tareas</h2>
           <p className="hint">
-            Las hechas ({doneCount}) se usan al generar. Las pendientes siguen visibles.
+            Las hechas ({doneCount}/{totalCount}) se usan al generar. Las pendientes siguen visibles.
           </p>
+          <div className="progress" title={`${progress}% completado`}>
+            <div className="progress-fill" style={{ width: `${progress}%` }} />
+          </div>
           <form className="composer" onSubmit={(e) => void addTask(e)}>
             <input
               placeholder="Título de la tarea"
@@ -259,7 +303,7 @@ export default function App() {
           <div className="list">
             {day?.tasks.length ? (
               day.tasks.map((task) => (
-                <article className="item" key={task.id}>
+                <article className={`item task status-${task.status}`} key={task.id}>
                   <div className="body">
                     <h3>{task.title}</h3>
                     {task.url ? (
@@ -294,7 +338,13 @@ export default function App() {
                 </article>
               ))
             ) : (
-              <p className="empty">Sin tareas.</p>
+              <p className="empty">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M9 11l3 3L22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
+                Sin tareas.
+              </p>
             )}
           </div>
         </section>
@@ -307,7 +357,7 @@ export default function App() {
             <p className="hint">
               Fuente:{" "}
               {previewMeta.source === "ai"
-                ? "DeepSeek V4 Pro"
+                ? config?.ai_provider ?? "la IA"
                 : "reparto automático (la IA no se usó)"}
               . Edita los bloques antes de escribir {previewMeta.xlsx_name}.
             </p>

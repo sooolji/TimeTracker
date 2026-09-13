@@ -8,12 +8,25 @@ from datetime import datetime, timedelta
 import httpx
 from dotenv import load_dotenv
 
-STYLE_EXAMPLES = [
-    "Cambio completo en la vista de login para toques finales y cambio de fotos por el video tanto para la vista desktop como mobile",
-    "Ajustes en estaditicas mimos y haciendo el merge a la rama dev",
-    "Realizacion de los cambios en el cambio de contrasena y correo electronico con su PR listo",
-    "[twinH_app_web] Rebase de b-counter-integrity sobre dev, cerrar PR #82, crear PR #85",
+DEFAULT_STYLE_EXAMPLES = [
+    "Ajustes finales en la vista de login y cambio de fotos por el video en desktop y mobile",
+    "Corrección de estadísticas y merge a la rama dev",
+    "Cambios en el flujo de cambio de contraseña y correo electrónico con su PR listo",
+    "Rebase de la rama de feature sobre dev, cierre de PR #82 y creación de PR #85",
 ]
+
+
+def style_examples() -> list[str]:
+    raw = (os.getenv("STYLE_EXAMPLES") or "").strip()
+    if not raw:
+        return DEFAULT_STYLE_EXAMPLES
+    try:
+        data = json.loads(raw)
+        if isinstance(data, list):
+            return [str(item).strip() for item in data if str(item).strip()]
+    except ValueError:
+        pass
+    return [line.strip() for line in raw.splitlines() if line.strip()]
 
 
 def parse_hhmm(value: str) -> datetime:
@@ -159,6 +172,7 @@ async def generate_with_ai(
     end: str,
     notes: list[dict],
     done_tasks: list[dict],
+    author: str = "tu nombre",
 ) -> list[dict]:
     api_key = _api_key()
     if not api_key:
@@ -175,9 +189,9 @@ async def generate_with_ai(
         )
         or "(sin tareas hechas)"
     )
-    examples = "\n".join(f"- {s}" for s in STYLE_EXAMPLES)
+    examples = "\n".join(f"- {s}" for s in style_examples())
 
-    prompt = f"""Eres un asistente que redacta el informe diario de tiempo de Jonathan (frontend en Fyself).
+    prompt = f"""Eres un asistente que redacta el informe diario de tiempo de {author}.
 
 Ventana de trabajo: {start} a {end}.
 Genera bloques de tiempo CONTIGUOS que cubran exactamente ese rango (sin huecos ni solapes).

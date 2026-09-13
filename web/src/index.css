@@ -6,15 +6,61 @@
   --muted: #6b6459;
   --line: #ddd6c8;
   --accent: #1f4d3a;
+  --accent-hover: #2a6350;
   --accent-soft: #e4efe8;
   --danger: #8a2d2d;
+  --danger-soft: #f6e8e4;
   --doing: #8a5a12;
+  --doing-soft: #f3e8d2;
   --done: #1f4d3a;
+  --done-soft: #e4efe8;
+  --shadow: 0 2px 10px rgba(28, 25, 21, 0.08);
+  --shadow-lg: 0 12px 40px rgba(28, 25, 21, 0.22);
+  --overlay: rgba(28, 25, 21, 0.45);
   font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #16130f;
+  --surface: #201c16;
+  --ink: #ece5d8;
+  --muted: #a2967f;
+  --line: #38312a;
+  --accent: #7fb69b;
+  --accent-hover: #98c9b1;
+  --accent-soft: #243529;
+  --danger: #e08f8f;
+  --danger-soft: #3a2420;
+  --doing: #d9a35a;
+  --doing-soft: #3a2f1e;
+  --done: #7fb69b;
+  --done-soft: #243529;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.55);
+  --overlay: rgba(10, 8, 6, 0.6);
 }
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 html,
@@ -27,6 +73,7 @@ body,
 body {
   background: var(--bg);
   color: var(--ink);
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 button,
@@ -40,6 +87,11 @@ button {
   cursor: pointer;
 }
 
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .app {
   max-width: 1180px;
   margin: 0 auto;
@@ -47,14 +99,20 @@ button {
 }
 
 .top {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   display: flex;
   flex-wrap: wrap;
   gap: 16px 24px;
   align-items: end;
   justify-content: space-between;
   margin-bottom: 24px;
-  padding-bottom: 20px;
+  padding: 12px 0 20px;
   border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .brand h1 {
@@ -98,6 +156,22 @@ button {
   color: var(--ink);
   padding: 8px 10px;
   border-radius: 4px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    background-color 0.25s ease, color 0.25s ease;
+}
+
+.field input:hover,
+.composer input:hover,
+.composer textarea:hover {
+  border-color: var(--muted);
+}
+
+.field input:focus,
+.composer input:focus,
+.composer textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .btn {
@@ -106,6 +180,16 @@ button {
   padding: 9px 14px;
   background: var(--accent);
   color: #f7f4ee;
+  transition: background-color 0.15s ease, color 0.15s ease,
+    border-color 0.15s ease, opacity 0.15s ease, transform 0.05s ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .btn:disabled {
@@ -119,11 +203,29 @@ button {
   border: 1px solid var(--line);
 }
 
+.btn.ghost:hover:not(:disabled) {
+  border-color: var(--muted);
+  background: var(--accent-soft);
+}
+
+.btn.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  line-height: 0;
+}
+
 .btn.danger {
   background: transparent;
   color: var(--danger);
   border: 0;
   padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.btn.danger:hover:not(:disabled) {
+  background: var(--danger-soft);
 }
 
 .columns {
@@ -147,6 +249,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .panel h2 {
@@ -189,6 +292,25 @@ button {
   gap: 10px;
   align-items: flex-start;
   justify-content: space-between;
+  background: var(--surface);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease,
+    background-color 0.25s ease;
+}
+
+.item:hover {
+  box-shadow: var(--shadow);
+}
+
+.item.task {
+  border-left: 3px solid var(--muted);
+}
+
+.item.task.status-doing {
+  border-left-color: var(--doing);
+}
+
+.item.task.status-done {
+  border-left-color: var(--done);
 }
 
 .item .body {
@@ -232,6 +354,13 @@ button {
   border-radius: 999px;
   padding: 2px 8px;
   font-size: 11px;
+  transition: border-color 0.15s ease, color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.chip:hover {
+  border-color: var(--ink);
+  color: var(--ink);
 }
 
 .chip.active.todo {
@@ -242,42 +371,76 @@ button {
 .chip.active.doing {
   border-color: var(--doing);
   color: var(--doing);
+  background: var(--doing-soft);
 }
 
 .chip.active.done {
   border-color: var(--done);
   color: var(--done);
-  background: var(--accent-soft);
+  background: var(--done-soft);
+}
+
+.progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--done);
+  border-radius: 999px;
+  transition: width 0.3s ease;
 }
 
 .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   color: var(--muted);
   font-size: 14px;
-  padding: 12px 0;
+  text-align: center;
+  padding: 28px 12px;
+}
+
+.empty svg {
+  opacity: 0.55;
 }
 
 .banner {
   margin: 0 0 16px;
   padding: 10px 12px;
   border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
   background: var(--accent-soft);
   border-radius: 6px;
   font-size: 14px;
 }
 
+.banner.success {
+  border-left-color: var(--done);
+  background: var(--done-soft);
+}
+
 .banner.error {
-  background: #f6e8e4;
+  border-left-color: var(--danger);
+  background: var(--danger-soft);
   color: var(--danger);
 }
 
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(28, 25, 21, 0.45);
+  background: var(--overlay);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: grid;
   place-items: center;
   padding: 20px;
   z-index: 10;
+  animation: fade-in 0.15s ease;
 }
 
 .modal {
@@ -285,8 +448,24 @@ button {
   max-height: 90vh;
   overflow: auto;
   background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 10px;
   padding: 20px;
+  box-shadow: var(--shadow-lg);
+  animation: pop-in 0.18s ease;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
 }
 
 .modal h2 {
@@ -321,8 +500,16 @@ button {
   width: 100%;
   background: var(--bg);
   border: 1px solid var(--line);
+  color: var(--ink);
   padding: 6px 8px;
   border-radius: 4px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.blocks input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .blocks .time {
